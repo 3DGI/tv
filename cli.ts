@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import { access, stat } from "node:fs/promises";
 import { constants } from "node:fs";
+import { networkInterfaces } from "node:os";
 import { extname, join, normalize, resolve, sep } from "node:path";
 import packageJson from "./package.json" with { type: "json" };
 
@@ -114,6 +115,48 @@ function buildViewerUrl(baseUrl: string, tilesetUrl: string): string {
   return url.toString();
 }
 
+function ipv4ToInt(ip: string): number | undefined {
+  const parts = ip.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) {
+    return undefined;
+  }
+
+  return (
+    parts[0] * 256 ** 3 +
+    parts[1] * 256 ** 2 +
+    parts[2] * 256 +
+    parts[3]
+  );
+}
+
+function isTailscaleIpv4(ip: string): boolean {
+  const value = ipv4ToInt(ip);
+  if (value === undefined) {
+    return false;
+  }
+
+  const start = ipv4ToInt("100.64.0.0")!;
+  const end = ipv4ToInt("100.127.255.255")!;
+  return value >= start && value <= end;
+}
+
+function getTailscaleIpv4(): string | undefined {
+  const interfaces = networkInterfaces();
+
+  for (const entries of Object.values(interfaces)) {
+    for (const entry of entries ?? []) {
+      if (entry.family !== "IPv4" || entry.internal) {
+        continue;
+      }
+      if (isTailscaleIpv4(entry.address)) {
+        return entry.address;
+      }
+    }
+  }
+
+  return undefined;
+}
+
 function resolveRequestPath(rootDir: string, pathname: string): string {
   const decoded = decodeURIComponent(pathname);
   const normalized = normalize(decoded).replace(new RegExp(`^\\${sep}+`), "");
@@ -216,14 +259,27 @@ async function main() {
     server.listen(port, options.host, () => resolveStart());
   });
 
-  const localTilesetUrl = new URL(options.tileset.split(sep).join("/"), `http://${options.host}:${port}/`).toString();
+  const tilesetPathForUrl = options.tileset.split(sep).join("/");
+  const loopbackTilesetUrl = new URL(tilesetPathForUrl, `http://127.0.0.1:${port}/`).toString();
+  const tailscaleIp = getTailscaleIpv4();
+  const tailscaleTilesetUrl = tailscaleIp
+    ? new URL(tilesetPathForUrl, `http://${tailscaleIp}:${port}/`).toString()
+    : undefined;
   const viewerBaseUrl = getViewerBaseUrl(options.viewerUrl);
 
   console.log(`Serving ${rootDir}`);
-  console.log(`Tileset URL: ${localTilesetUrl}`);
+  console.log(`Loopback tileset URL: ${loopbackTilesetUrl}`);
+  if (tailscaleTilesetUrl) {
+    console.log(`Tailscale tileset URL: ${tailscaleTilesetUrl}`);
+  } else {
+    console.log("Tailscale tileset URL: unavailable");
+  }
 
   if (viewerBaseUrl) {
-    console.log(`Viewer URL: ${buildViewerUrl(viewerBaseUrl, localTilesetUrl)}`);
+    console.log(`Viewer URL (loopback): ${buildViewerUrl(viewerBaseUrl, loopbackTilesetUrl)}`);
+    if (tailscaleTilesetUrl) {
+      console.log(`Viewer URL (tailscale): ${buildViewerUrl(viewerBaseUrl, tailscaleTilesetUrl)}`);
+    }
   } else {
     console.log("Viewer URL: unavailable");
     console.log(
