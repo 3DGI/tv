@@ -19,7 +19,11 @@ nix run github:3dgi/tv -- --port 8090 --tileset path/to/tileset.json
 The command starts a local static server with permissive CORS headers and prints:
 
 - the local tileset URL
+- a local viewer URL that works in Safari because both the viewer and tileset are served over `http`
 - the GitHub Pages viewer URL with `?tileset=...`
+
+Safari blocks `https -> http` tileset requests as mixed content, so the local viewer URL is the one to use for local testing there.
+On the first `nix run`, the launcher bootstraps a cached local app directory, runs `bun install`, and builds the viewer before starting the servers.
 
 You can also override the deployed viewer URL explicitly:
 
