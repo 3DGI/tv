@@ -232,7 +232,6 @@ async function main() {
   const localViewerLoopbackUrl = buildViewerUrl(`http://127.0.0.1:${viewerPort}/`, loopbackTilesetUrl);
 
   console.log(`Serving ${rootDir}`);
-  console.log(`Local viewer bundle: ${VIEWER_DIST_DIR}`);
   console.log(`Loopback tileset URL: ${loopbackTilesetUrl}`);
   console.log(`Local viewer URL (loopback): ${localViewerLoopbackUrl}`);
 
