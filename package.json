@@ -2,7 +2,6 @@
   "name": "3dtiles-tester",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://3dgi.github.io/tv/",
   "type": "module",
   "scripts": {
     "build": "bun run build.ts",
