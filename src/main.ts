@@ -2,11 +2,13 @@
 // We only use its types here — it is not bundled.
 declare const Cesium: typeof import("cesium");
 type Cesium3DTileset = import("cesium").Cesium3DTileset;
+type Cesium3DTileFeature = import("cesium").Cesium3DTileFeature;
 
 const urlInput = document.getElementById("url-input") as HTMLInputElement;
 const tokenInput = document.getElementById("token-input") as HTMLInputElement;
 const terrainSelect = document.getElementById("terrain-select") as HTMLSelectElement;
 const loadBtn = document.getElementById("load-btn") as HTMLButtonElement;
+const inspectContent = document.getElementById("inspect-content") as HTMLDivElement;
 const searchParams = new URLSearchParams(window.location.search);
 
 const viewer = new Cesium.Viewer("cesiumContainer", {
@@ -37,6 +39,105 @@ const DEFAULT_TERRAIN_MODE: TerrainMode = TERRAIN_PDOK;
 
 let currentTileset: Cesium3DTileset | null = null;
 let terrainRequestId = 0;
+
+function formatAngle(value: number) {
+  return `${value.toFixed(6)} deg`;
+}
+
+function formatHeight(value: number) {
+  return `${value.toFixed(2)} m`;
+}
+
+function formatPropertyValue(value: unknown) {
+  if (value === undefined) return "undefined";
+  if (value === null) return "null";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+function appendLine(container: HTMLElement, label: string, value: string) {
+  const row = document.createElement("div");
+  const labelEl = document.createElement("span");
+  labelEl.className = "label";
+  labelEl.textContent = label;
+  const valueEl = document.createElement("span");
+  valueEl.textContent = value;
+  row.append(labelEl, valueEl);
+  container.appendChild(row);
+}
+
+function renderInspection(
+  cartesian: import("cesium").Cartesian3 | undefined,
+  pickedFeature: Cesium3DTileFeature | undefined
+) {
+  inspectContent.replaceChildren();
+
+  if (!cartesian) {
+    inspectContent.textContent = "No world position was resolved for that click.";
+    inspectContent.className = "hint";
+    return;
+  }
+
+  inspectContent.className = "";
+
+  const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+  appendLine(inspectContent, "Longitude", formatAngle(Cesium.Math.toDegrees(cartographic.longitude)));
+  appendLine(inspectContent, "Latitude", formatAngle(Cesium.Math.toDegrees(cartographic.latitude)));
+  appendLine(inspectContent, "Height", formatHeight(cartographic.height));
+
+  const featureSection = document.createElement("div");
+  featureSection.className = "section";
+  inspectContent.appendChild(featureSection);
+
+  if (!pickedFeature) {
+    featureSection.textContent = "No 3D Tiles feature picked.";
+    return;
+  }
+
+  appendLine(featureSection, "Feature ID", String(pickedFeature.featureId));
+
+  const propertyIds = pickedFeature.getPropertyIds().sort((a, b) => a.localeCompare(b));
+  if (propertyIds.length === 0) {
+    const noProps = document.createElement("div");
+    noProps.textContent = "Picked feature has no feature properties.";
+    featureSection.appendChild(noProps);
+    return;
+  }
+
+  const propertiesTitle = document.createElement("div");
+  propertiesTitle.textContent = "Properties";
+  featureSection.appendChild(propertiesTitle);
+
+  const propertiesPre = document.createElement("pre");
+  propertiesPre.textContent = propertyIds
+    .map((propertyId) => `${propertyId}: ${formatPropertyValue(pickedFeature.getProperty(propertyId))}`)
+    .join("\n");
+  featureSection.appendChild(propertiesPre);
+}
+
+function getPickedPosition(windowPosition: import("cesium").Cartesian2) {
+  if (viewer.scene.pickPositionSupported) {
+    const pickedPosition = viewer.scene.pickPosition(windowPosition);
+    if (Cesium.defined(pickedPosition)) return pickedPosition;
+  }
+
+  return viewer.camera.pickEllipsoid(windowPosition, viewer.scene.globe.ellipsoid);
+}
+
+function setupInspector() {
+  const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+  handler.setInputAction((event: { position: import("cesium").Cartesian2 }) => {
+    const picked = viewer.scene.pick(event.position);
+    const pickedFeature = picked instanceof Cesium.Cesium3DTileFeature ? picked : undefined;
+    const cartesian = getPickedPosition(event.position);
+    renderInspection(cartesian, pickedFeature);
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+}
 
 function applyToken() {
   const t = tokenInput.value.trim();
@@ -172,4 +273,5 @@ const initialTerrainMode: TerrainMode =
 urlInput.value = initialTileset;
 tokenInput.value = initialToken;
 terrainSelect.value = initialTerrainMode;
+setupInspector();
 loadTileset(initialTileset);
