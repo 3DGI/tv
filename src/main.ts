@@ -5,7 +5,7 @@ type Cesium3DTileset = import("cesium").Cesium3DTileset;
 
 const urlInput = document.getElementById("url-input") as HTMLInputElement;
 const tokenInput = document.getElementById("token-input") as HTMLInputElement;
-const terrainToggle = document.getElementById("terrain-toggle") as HTMLInputElement;
+const terrainSelect = document.getElementById("terrain-select") as HTMLSelectElement;
 const loadBtn = document.getElementById("load-btn") as HTMLButtonElement;
 const searchParams = new URLSearchParams(window.location.search);
 
@@ -22,7 +22,12 @@ const viewer = new Cesium.Viewer("cesiumContainer", {
 
 const DEFAULT_TILESET_URL = "http://localhost:8080/tileset.json";
 const DEFAULT_TOKEN = "";
-const DEFAULT_TERRAIN_ENABLED = false;
+const PDOK_TERRAIN_URL = "https://api.pdok.nl/kadaster/3d-basisvoorziening/ogc/v1/collections/digitaalterreinmodel/quantized-mesh";
+const TERRAIN_NONE = "none";
+const TERRAIN_CESIUM = "cesium";
+const TERRAIN_PDOK = "pdok";
+type TerrainMode = typeof TERRAIN_NONE | typeof TERRAIN_CESIUM | typeof TERRAIN_PDOK;
+const DEFAULT_TERRAIN_MODE: TerrainMode = TERRAIN_NONE;
 
 let currentTileset: Cesium3DTileset | null = null;
 let terrainRequestId = 0;
@@ -36,21 +41,37 @@ function createEllipsoidTerrain() {
   return new Cesium.Terrain(Promise.resolve(new Cesium.EllipsoidTerrainProvider()));
 }
 
+function createPdokTerrain() {
+  return new Cesium.Terrain(Cesium.CesiumTerrainProvider.fromUrl(PDOK_TERRAIN_URL, {
+    requestVertexNormals: true,
+  }));
+}
+
+function getTerrainMode(): TerrainMode {
+  const value = terrainSelect.value;
+  if (value === TERRAIN_CESIUM || value === TERRAIN_PDOK) return value;
+  return TERRAIN_NONE;
+}
+
 function syncTerrain() {
   const requestId = ++terrainRequestId;
   const token = tokenInput.value.trim();
-  const shouldUseWorldTerrain = terrainToggle.checked && Boolean(token);
-  const terrain = shouldUseWorldTerrain
+  const mode = getTerrainMode();
+  const useCesiumWorldTerrain = mode === TERRAIN_CESIUM && Boolean(token);
+  const usePdokTerrain = mode === TERRAIN_PDOK;
+  const terrain = useCesiumWorldTerrain
     ? Cesium.Terrain.fromWorldTerrain({
         requestVertexNormals: true,
         requestWaterMask: true,
       })
-    : createEllipsoidTerrain();
+    : usePdokTerrain
+      ? createPdokTerrain()
+      : createEllipsoidTerrain();
 
   terrain.readyEvent.addEventListener(() => {
     if (requestId !== terrainRequestId) return;
 
-    viewer.scene.globe.depthTestAgainstTerrain = shouldUseWorldTerrain;
+    viewer.scene.globe.depthTestAgainstTerrain = mode !== TERRAIN_NONE;
     viewer.scene.requestRender();
   });
 
@@ -64,7 +85,7 @@ function syncTerrain() {
   viewer.scene.setTerrain(terrain);
 }
 
-function updateQuery(url: string, token: string, terrainEnabled: boolean) {
+function updateQuery(url: string, token: string, terrainMode: TerrainMode) {
   const next = new URL(window.location.href);
   next.searchParams.set("tileset", url);
   if (token) {
@@ -72,8 +93,8 @@ function updateQuery(url: string, token: string, terrainEnabled: boolean) {
   } else {
     next.searchParams.delete("token");
   }
-  if (terrainEnabled) {
-    next.searchParams.set("terrain", "1");
+  if (terrainMode !== TERRAIN_NONE) {
+    next.searchParams.set("terrain", terrainMode);
   } else {
     next.searchParams.delete("terrain");
   }
@@ -96,7 +117,7 @@ async function loadTileset(url: string) {
     });
     viewer.scene.primitives.add(tileset);
     currentTileset = tileset;
-    updateQuery(url, tokenInput.value.trim(), terrainToggle.checked);
+    updateQuery(url, tokenInput.value.trim(), getTerrainMode());
     await viewer.zoomTo(tileset);
   } catch (err: unknown) {
     console.error(err);
@@ -124,19 +145,25 @@ urlInput.addEventListener("keydown", (e) => {
 tokenInput.addEventListener("change", () => {
   applyToken();
   syncTerrain();
-  updateQuery(urlInput.value.trim(), tokenInput.value.trim(), terrainToggle.checked);
+  updateQuery(urlInput.value.trim(), tokenInput.value.trim(), getTerrainMode());
 });
 
-terrainToggle.addEventListener("change", () => {
+terrainSelect.addEventListener("change", () => {
   syncTerrain();
-  updateQuery(urlInput.value.trim(), tokenInput.value.trim(), terrainToggle.checked);
+  updateQuery(urlInput.value.trim(), tokenInput.value.trim(), getTerrainMode());
 });
 
 const initialTileset = searchParams.get("tileset") ?? DEFAULT_TILESET_URL;
 const initialToken = searchParams.get("token") ?? DEFAULT_TOKEN;
-const initialTerrainEnabled = searchParams.get("terrain") === "1" || DEFAULT_TERRAIN_ENABLED;
+const initialTerrainParam = searchParams.get("terrain");
+const initialTerrainMode: TerrainMode =
+  initialTerrainParam === TERRAIN_CESIUM || initialTerrainParam === "1"
+    ? TERRAIN_CESIUM
+    : initialTerrainParam === TERRAIN_PDOK
+      ? TERRAIN_PDOK
+      : DEFAULT_TERRAIN_MODE;
 
 urlInput.value = initialTileset;
 tokenInput.value = initialToken;
-terrainToggle.checked = initialTerrainEnabled;
+terrainSelect.value = initialTerrainMode;
 loadTileset(initialTileset);

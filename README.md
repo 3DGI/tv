@@ -28,4 +28,10 @@ The command starts a local static server with permissive CORS headers and prints
 - the local tileset URL
 - a local viewer URL
 
-If you provide a Cesium Ion token in the viewer, you can toggle Cesium World Terrain on or off with the `Terrain` checkbox. The setting is persisted in the URL as `terrain=1`.
+The viewer includes a `Terrain` selector with three modes:
+
+- `None`
+- `Cesium World Terrain` (requires a Cesium Ion token)
+- `PDOK Quantized Mesh` via `https://api.pdok.nl/kadaster/3d-basisvoorziening/ogc/v1/collections/digitaalterreinmodel/quantized-mesh`
+
+The selected terrain mode is persisted in the URL as the `terrain` query parameter.

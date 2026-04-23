@@ -15,23 +15,28 @@
       position: absolute; top: 10px; left: 10px; right: 50%; z-index: 10;
       display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
     }
-    #toolbar input {
+    #toolbar input, #toolbar select {
       padding: 8px 10px; border: 1px solid #444; border-radius: 4px;
       background: rgba(0, 0, 0, .75); color: #eee; font-size: 14px;
       outline: none;
     }
-    #toolbar input:focus { border-color: #6ab0de; }
+    #toolbar input:focus, #toolbar select:focus { border-color: #6ab0de; }
     #url-input { flex: 1; }
     #token-input { width: 200px; }
-    .toggle {
+    .field {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 8px 10px; border: 1px solid #444; border-radius: 4px;
       background: rgba(0, 0, 0, .75); color: #eee; font-size: 14px;
       white-space: nowrap;
     }
-    .toggle input {
-      margin: 0;
-      accent-color: #6ab0de;
+    .field label {
+      color: #cfd7df;
+    }
+    .field select {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      min-width: 180px;
     }
     button {
       padding: 8px 14px; border: 1px solid #444; border-radius: 4px;
@@ -52,10 +57,14 @@
            placeholder="Paste tileset URL (e.g. https://.../tileset.json)" />
     <input id="token-input" type="text"
            placeholder="Ion token (optional)" />
-    <label class="toggle" for="terrain-toggle">
-      <input id="terrain-toggle" type="checkbox" />
-      Terrain
-    </label>
+    <div class="field">
+      <label for="terrain-select">Terrain</label>
+      <select id="terrain-select">
+        <option value="none">None</option>
+        <option value="cesium">Cesium World Terrain</option>
+        <option value="pdok">PDOK Quantized Mesh</option>
+      </select>
+    </div>
     <button id="load-btn">Load</button>
   </div>
 
