@@ -1,4 +1,4 @@
-# 3D Tiles Tester
+# Simple 3D Tiles Viewer
 
 Cesium viewer for testing local `tileset.json` trees, with a `nix run` launcher that serves the current directory with CORS.
 

@@ -11,8 +11,8 @@ type CliOptions = {
 };
 
 const DEFAULT_HOST = "127.0.0.1";
-const DEFAULT_PORT = 8080;
-const DEFAULT_VIEWER_PORT = 3000;
+const DEFAULT_PORT = 9010;
+const DEFAULT_VIEWER_PORT = 9011;
 const DEFAULT_TILESET = "tileset.json";
 const VIEWER_DIST_DIR = resolve(import.meta.dir, "dist");
 
