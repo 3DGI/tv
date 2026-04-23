@@ -11,7 +11,7 @@ const searchParams = new URLSearchParams(window.location.search);
 const viewer = new Cesium.Viewer("cesiumContainer", {
   animation: false,
   timeline: false,
-  geocoder: false,
+  geocoder: true,
   baseLayerPicker: true,
   sceneModePicker: true,
   shouldAnimate: false,
@@ -23,10 +23,42 @@ const DEFAULT_TILESET_URL = "http://localhost:8080/tileset.json";
 const DEFAULT_TOKEN = "";
 
 let currentTileset: Cesium3DTileset | null = null;
+let terrainRequestId = 0;
 
 function applyToken() {
   const t = tokenInput.value.trim();
-  if (t) Cesium.Ion.defaultAccessToken = t;
+  Cesium.Ion.defaultAccessToken = t;
+}
+
+function createEllipsoidTerrain() {
+  return new Cesium.Terrain(Promise.resolve(new Cesium.EllipsoidTerrainProvider()));
+}
+
+function syncTerrain() {
+  const requestId = ++terrainRequestId;
+  const token = tokenInput.value.trim();
+  const terrain = token
+    ? Cesium.Terrain.fromWorldTerrain({
+        requestVertexNormals: true,
+        requestWaterMask: true,
+      })
+    : createEllipsoidTerrain();
+
+  terrain.readyEvent.addEventListener(() => {
+    if (requestId !== terrainRequestId) return;
+
+    viewer.scene.globe.depthTestAgainstTerrain = Boolean(token);
+    viewer.scene.requestRender();
+  });
+
+  terrain.errorEvent.addEventListener((error) => {
+    if (requestId !== terrainRequestId) return;
+
+    console.error(error);
+    alert(`Failed to configure terrain: ${error}`);
+  });
+
+  viewer.scene.setTerrain(terrain);
 }
 
 function updateQuery(url: string, token: string) {
@@ -42,6 +74,7 @@ function updateQuery(url: string, token: string) {
 
 async function loadTileset(url: string) {
   applyToken();
+  syncTerrain();
 
   if (currentTileset) {
     viewer.scene.primitives.remove(currentTileset);
@@ -81,6 +114,8 @@ urlInput.addEventListener("keydown", (e) => {
 });
 
 tokenInput.addEventListener("change", () => {
+  applyToken();
+  syncTerrain();
   updateQuery(urlInput.value.trim(), tokenInput.value.trim());
 });
 
