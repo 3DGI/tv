@@ -12,8 +12,8 @@
     }
     body { background: #000; color: #eee; }
     #toolbar {
-      position: absolute; top: 10px; left: 10px; right: 10px; z-index: 10;
-      display: flex; gap: 8px; align-items: center;
+      position: absolute; top: 10px; left: 10px; right: 50%; z-index: 10;
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
     }
     #toolbar input {
       padding: 8px 10px; border: 1px solid #444; border-radius: 4px;
@@ -23,11 +23,25 @@
     #toolbar input:focus { border-color: #6ab0de; }
     #url-input { flex: 1; }
     #token-input { width: 200px; }
+    .toggle {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border: 1px solid #444; border-radius: 4px;
+      background: rgba(0, 0, 0, .75); color: #eee; font-size: 14px;
+      white-space: nowrap;
+    }
+    .toggle input {
+      margin: 0;
+      accent-color: #6ab0de;
+    }
     button {
       padding: 8px 14px; border: 1px solid #444; border-radius: 4px;
       background: #2c3e50; color: #eee; cursor: pointer; font-size: 14px;
     }
     button:hover { background: #34495e; }
+    @media (max-width: 900px) {
+      #toolbar { right: 10px; top: 152px; }
+      #url-input { flex-basis: 100%; }
+    }
   </style>
 </head>
 <body>
@@ -38,6 +52,10 @@
            placeholder="Paste tileset URL (e.g. https://.../tileset.json)" />
     <input id="token-input" type="text"
            placeholder="Ion token (optional)" />
+    <label class="toggle" for="terrain-toggle">
+      <input id="terrain-toggle" type="checkbox" />
+      Terrain
+    </label>
     <button id="load-btn">Load</button>
   </div>
 

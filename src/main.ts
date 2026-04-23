@@ -5,6 +5,7 @@ type Cesium3DTileset = import("cesium").Cesium3DTileset;
 
 const urlInput = document.getElementById("url-input") as HTMLInputElement;
 const tokenInput = document.getElementById("token-input") as HTMLInputElement;
+const terrainToggle = document.getElementById("terrain-toggle") as HTMLInputElement;
 const loadBtn = document.getElementById("load-btn") as HTMLButtonElement;
 const searchParams = new URLSearchParams(window.location.search);
 
@@ -21,6 +22,7 @@ const viewer = new Cesium.Viewer("cesiumContainer", {
 
 const DEFAULT_TILESET_URL = "http://localhost:8080/tileset.json";
 const DEFAULT_TOKEN = "";
+const DEFAULT_TERRAIN_ENABLED = false;
 
 let currentTileset: Cesium3DTileset | null = null;
 let terrainRequestId = 0;
@@ -37,7 +39,8 @@ function createEllipsoidTerrain() {
 function syncTerrain() {
   const requestId = ++terrainRequestId;
   const token = tokenInput.value.trim();
-  const terrain = token
+  const shouldUseWorldTerrain = terrainToggle.checked && Boolean(token);
+  const terrain = shouldUseWorldTerrain
     ? Cesium.Terrain.fromWorldTerrain({
         requestVertexNormals: true,
         requestWaterMask: true,
@@ -47,7 +50,7 @@ function syncTerrain() {
   terrain.readyEvent.addEventListener(() => {
     if (requestId !== terrainRequestId) return;
 
-    viewer.scene.globe.depthTestAgainstTerrain = Boolean(token);
+    viewer.scene.globe.depthTestAgainstTerrain = shouldUseWorldTerrain;
     viewer.scene.requestRender();
   });
 
@@ -61,13 +64,18 @@ function syncTerrain() {
   viewer.scene.setTerrain(terrain);
 }
 
-function updateQuery(url: string, token: string) {
+function updateQuery(url: string, token: string, terrainEnabled: boolean) {
   const next = new URL(window.location.href);
   next.searchParams.set("tileset", url);
   if (token) {
     next.searchParams.set("token", token);
   } else {
     next.searchParams.delete("token");
+  }
+  if (terrainEnabled) {
+    next.searchParams.set("terrain", "1");
+  } else {
+    next.searchParams.delete("terrain");
   }
   window.history.replaceState({}, "", next);
 }
@@ -88,7 +96,7 @@ async function loadTileset(url: string) {
     });
     viewer.scene.primitives.add(tileset);
     currentTileset = tileset;
-    updateQuery(url, tokenInput.value.trim());
+    updateQuery(url, tokenInput.value.trim(), terrainToggle.checked);
     await viewer.zoomTo(tileset);
   } catch (err: unknown) {
     console.error(err);
@@ -116,12 +124,19 @@ urlInput.addEventListener("keydown", (e) => {
 tokenInput.addEventListener("change", () => {
   applyToken();
   syncTerrain();
-  updateQuery(urlInput.value.trim(), tokenInput.value.trim());
+  updateQuery(urlInput.value.trim(), tokenInput.value.trim(), terrainToggle.checked);
+});
+
+terrainToggle.addEventListener("change", () => {
+  syncTerrain();
+  updateQuery(urlInput.value.trim(), tokenInput.value.trim(), terrainToggle.checked);
 });
 
 const initialTileset = searchParams.get("tileset") ?? DEFAULT_TILESET_URL;
 const initialToken = searchParams.get("token") ?? DEFAULT_TOKEN;
+const initialTerrainEnabled = searchParams.get("terrain") === "1" || DEFAULT_TERRAIN_ENABLED;
 
 urlInput.value = initialTileset;
 tokenInput.value = initialToken;
+terrainToggle.checked = initialTerrainEnabled;
 loadTileset(initialTileset);
