@@ -14,7 +14,13 @@ const viewer = new Cesium.Viewer("cesiumContainer", {
   timeline: false,
   geocoder: true,
   baseLayerPicker: true,
-  sceneModePicker: true,
+  homeButton: false,
+  sceneModePicker: false,
+  baseLayer: new Cesium.ImageryLayer(
+    new Cesium.OpenStreetMapImageryProvider({
+      url: "https://tile.openstreetmap.org/",
+    })
+  ),
   shouldAnimate: false,
   requestRenderMode: true,
   maximumRenderTimeChange: Infinity,
@@ -27,7 +33,7 @@ const TERRAIN_NONE = "none";
 const TERRAIN_CESIUM = "cesium";
 const TERRAIN_PDOK = "pdok";
 type TerrainMode = typeof TERRAIN_NONE | typeof TERRAIN_CESIUM | typeof TERRAIN_PDOK;
-const DEFAULT_TERRAIN_MODE: TerrainMode = TERRAIN_NONE;
+const DEFAULT_TERRAIN_MODE: TerrainMode = TERRAIN_PDOK;
 
 let currentTileset: Cesium3DTileset | null = null;
 let terrainRequestId = 0;
