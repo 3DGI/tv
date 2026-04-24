@@ -1,8 +1,21 @@
 // Cesium is loaded as a global via /cesium/Cesium.js in index.html.
 // We only use its types here — it is not bundled.
 declare const Cesium: typeof import("cesium");
+type Color = import("cesium").Color;
 type Cesium3DTileset = import("cesium").Cesium3DTileset;
 type Cesium3DTileFeature = import("cesium").Cesium3DTileFeature;
+type Cesium3DTileContent = {
+  featuresLength: number;
+  getFeature(index: number): Cesium3DTileFeature;
+};
+type Cesium3DTile = {
+  content: Cesium3DTileContent;
+};
+type SelectedFeatureState = {
+  featureId: number;
+  feature?: Cesium3DTileFeature;
+  originalColor: Color;
+};
 
 const urlInput = document.getElementById("url-input") as HTMLInputElement;
 const tokenInput = document.getElementById("token-input") as HTMLInputElement;
@@ -36,9 +49,11 @@ const TERRAIN_CESIUM = "cesium";
 const TERRAIN_PDOK = "pdok";
 type TerrainMode = typeof TERRAIN_NONE | typeof TERRAIN_CESIUM | typeof TERRAIN_PDOK;
 const DEFAULT_TERRAIN_MODE: TerrainMode = TERRAIN_PDOK;
+const SELECTION_HIGHLIGHT_COLOR = new Cesium.Color(0.25, 0.78, 1.0, 0.9);
 
 let currentTileset: Cesium3DTileset | null = null;
 let terrainRequestId = 0;
+let selectedFeatureState: SelectedFeatureState | undefined;
 
 function formatAngle(value: number) {
   return `${value.toFixed(6)} deg`;
@@ -71,6 +86,83 @@ function appendLine(container: HTMLElement, label: string, value: string) {
   container.appendChild(row);
 }
 
+function cloneColor(color: Color, result?: Color) {
+  return Cesium.Color.clone(color, result ?? new Cesium.Color())!;
+}
+
+function getTileFeatureById(tile: Cesium3DTile, featureId: number) {
+  const { content } = tile;
+  for (let index = 0; index < content.featuresLength; index += 1) {
+    const feature = content.getFeature(index);
+    if (feature.featureId === featureId) {
+      return feature;
+    }
+  }
+
+  return undefined;
+}
+
+function clearSelection() {
+  if (!selectedFeatureState) {
+    return;
+  }
+
+  const { feature, originalColor } = selectedFeatureState;
+  if (feature) {
+    feature.color = cloneColor(originalColor);
+  }
+
+  selectedFeatureState = undefined;
+  viewer.scene.requestRender();
+}
+
+function selectFeature(feature: Cesium3DTileFeature) {
+  if (selectedFeatureState?.feature === feature) {
+    return;
+  }
+
+  clearSelection();
+  selectedFeatureState = {
+    featureId: feature.featureId,
+    feature,
+    originalColor: cloneColor(feature.color),
+  };
+  feature.color = cloneColor(SELECTION_HIGHLIGHT_COLOR);
+  viewer.scene.requestRender();
+}
+
+function restoreSelectionOnTileUnload(tile: Cesium3DTile) {
+  const state = selectedFeatureState;
+  if (!state || !state.feature) {
+    return;
+  }
+
+  const feature = getTileFeatureById(tile, state.featureId);
+  if (!feature || feature !== state.feature) {
+    return;
+  }
+
+  feature.color = cloneColor(state.originalColor);
+  state.feature = undefined;
+  viewer.scene.requestRender();
+}
+
+function reapplySelectionOnTileVisible(tile: Cesium3DTile) {
+  const state = selectedFeatureState;
+  if (!state || state.feature) {
+    return;
+  }
+
+  const feature = getTileFeatureById(tile, state.featureId);
+  if (!feature) {
+    return;
+  }
+
+  state.feature = feature;
+  feature.color = cloneColor(SELECTION_HIGHLIGHT_COLOR);
+  viewer.scene.requestRender();
+}
+
 function renderInspection(
   cartesian: import("cesium").Cartesian3 | undefined,
   pickedFeature: Cesium3DTileFeature | undefined
@@ -98,6 +190,13 @@ function renderInspection(
     featureSection.textContent = "No 3D Tiles feature picked.";
     return;
   }
+
+  featureSection.className = "section selected";
+
+  const selectedBadge = document.createElement("div");
+  selectedBadge.className = "selection-badge";
+  selectedBadge.textContent = "Selected feature";
+  featureSection.appendChild(selectedBadge);
 
   appendLine(featureSection, "Feature ID", String(pickedFeature.featureId));
 
@@ -134,9 +233,24 @@ function setupInspector() {
   handler.setInputAction((event: { position: import("cesium").Cartesian2 }) => {
     const picked = viewer.scene.pick(event.position);
     const pickedFeature = picked instanceof Cesium.Cesium3DTileFeature ? picked : undefined;
+    if (pickedFeature) {
+      selectFeature(pickedFeature);
+    } else {
+      clearSelection();
+    }
     const cartesian = getPickedPosition(event.position);
     renderInspection(cartesian, pickedFeature);
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+}
+
+function attachTilesetSelectionLifecycle(tileset: Cesium3DTileset) {
+  tileset.tileUnload.addEventListener(restoreSelectionOnTileUnload);
+  tileset.tileVisible.addEventListener(reapplySelectionOnTileVisible);
+}
+
+function detachTilesetSelectionLifecycle(tileset: Cesium3DTileset) {
+  tileset.tileUnload.removeEventListener(restoreSelectionOnTileUnload);
+  tileset.tileVisible.removeEventListener(reapplySelectionOnTileVisible);
 }
 
 function applyToken() {
@@ -212,17 +326,21 @@ async function loadTileset(url: string) {
   applyToken();
   syncTerrain();
 
-  if (currentTileset) {
-    viewer.scene.primitives.remove(currentTileset);
-    currentTileset = null;
-  }
-
   try {
     const tileset = await Cesium.Cesium3DTileset.fromUrl(url, {
       showCreditsOnScreen: true,
       debugShowBoundingVolume: true
     });
+
+    if (currentTileset) {
+      clearSelection();
+      detachTilesetSelectionLifecycle(currentTileset);
+      viewer.scene.primitives.remove(currentTileset);
+      currentTileset = null;
+    }
+
     viewer.scene.primitives.add(tileset);
+    attachTilesetSelectionLifecycle(tileset);
     currentTileset = tileset;
     updateQuery(url, tokenInput.value.trim(), getTerrainMode());
     await viewer.zoomTo(tileset);
