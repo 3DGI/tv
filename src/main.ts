@@ -8,6 +8,7 @@ const urlInput = document.getElementById("url-input") as HTMLInputElement;
 const tokenInput = document.getElementById("token-input") as HTMLInputElement;
 const terrainSelect = document.getElementById("terrain-select") as HTMLSelectElement;
 const loadBtn = document.getElementById("load-btn") as HTMLButtonElement;
+const zoomBtn = document.getElementById("zoom-btn") as HTMLButtonElement;
 const inspectContent = document.getElementById("inspect-content") as HTMLDivElement;
 const searchParams = new URLSearchParams(window.location.search);
 
@@ -233,6 +234,18 @@ async function loadTileset(url: string) {
   }
 }
 
+async function zoomToCurrentTileset() {
+  if (!currentTileset) return;
+
+  try {
+    await viewer.zoomTo(currentTileset);
+  } catch (err: unknown) {
+    console.error(err);
+    const msg = err instanceof Error ? err.message : String(err);
+    alert(`Failed to zoom to tileset: ${msg}`);
+  }
+}
+
 function triggerLoad() {
   const v = urlInput.value.trim();
   if (v) {
@@ -242,6 +255,9 @@ function triggerLoad() {
 
 loadBtn.addEventListener("click", () => {
   triggerLoad();
+});
+zoomBtn.addEventListener("click", () => {
+  zoomToCurrentTileset();
 });
 urlInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
