@@ -8,6 +8,7 @@ const urlInput = document.getElementById("url-input") as HTMLInputElement;
 const tokenInput = document.getElementById("token-input") as HTMLInputElement;
 const terrainSelect = document.getElementById("terrain-select") as HTMLSelectElement;
 const loadBtn = document.getElementById("load-btn") as HTMLButtonElement;
+const zoomBtn = document.getElementById("zoom-btn") as HTMLButtonElement;
 const inspectContent = document.getElementById("inspect-content") as HTMLDivElement;
 const searchParams = new URLSearchParams(window.location.search);
 
@@ -39,6 +40,33 @@ const DEFAULT_TERRAIN_MODE: TerrainMode = TERRAIN_PDOK;
 
 let currentTileset: Cesium3DTileset | null = null;
 let terrainRequestId = 0;
+
+function normalizeTilesetUrl(rawUrl: string) {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return trimmed;
+
+  try {
+    const parsed = new URL(trimmed);
+    const isLoopbackHost = parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost";
+    const looksLikeFilesystemPath =
+      parsed.pathname.startsWith("/home/") ||
+      parsed.pathname.startsWith("/Users/") ||
+      parsed.pathname.startsWith("/private/");
+
+    if (isLoopbackHost && looksLikeFilesystemPath) {
+      const parts = parsed.pathname.split("/").filter(Boolean);
+      const tail = parts[parts.length - 1];
+      if (tail) {
+        parsed.pathname = `/${tail}`;
+        return parsed.toString();
+      }
+    }
+
+    return parsed.toString();
+  } catch {
+    return trimmed;
+  }
+}
 
 function formatAngle(value: number) {
   return `${value.toFixed(6)} deg`;
@@ -233,15 +261,31 @@ async function loadTileset(url: string) {
   }
 }
 
+async function zoomToCurrentTileset() {
+  if (!currentTileset) return;
+
+  try {
+    await viewer.zoomTo(currentTileset);
+  } catch (err: unknown) {
+    console.error(err);
+    const msg = err instanceof Error ? err.message : String(err);
+    alert(`Failed to zoom to tileset: ${msg}`);
+  }
+}
+
 function triggerLoad() {
-  const v = urlInput.value.trim();
+  const v = normalizeTilesetUrl(urlInput.value);
   if (v) {
+    urlInput.value = v;
     loadTileset(v);
   }
 }
 
 loadBtn.addEventListener("click", () => {
   triggerLoad();
+});
+zoomBtn.addEventListener("click", () => {
+  zoomToCurrentTileset();
 });
 urlInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
@@ -270,8 +314,8 @@ const initialTerrainMode: TerrainMode =
       ? TERRAIN_PDOK
       : DEFAULT_TERRAIN_MODE;
 
-urlInput.value = initialTileset;
+urlInput.value = normalizeTilesetUrl(initialTileset);
 tokenInput.value = initialToken;
 terrainSelect.value = initialTerrainMode;
 setupInspector();
-loadTileset(initialTileset);
+loadTileset(urlInput.value);
