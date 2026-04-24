@@ -41,6 +41,33 @@ const DEFAULT_TERRAIN_MODE: TerrainMode = TERRAIN_PDOK;
 let currentTileset: Cesium3DTileset | null = null;
 let terrainRequestId = 0;
 
+function normalizeTilesetUrl(rawUrl: string) {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return trimmed;
+
+  try {
+    const parsed = new URL(trimmed);
+    const isLoopbackHost = parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost";
+    const looksLikeFilesystemPath =
+      parsed.pathname.startsWith("/home/") ||
+      parsed.pathname.startsWith("/Users/") ||
+      parsed.pathname.startsWith("/private/");
+
+    if (isLoopbackHost && looksLikeFilesystemPath) {
+      const parts = parsed.pathname.split("/").filter(Boolean);
+      const tail = parts[parts.length - 1];
+      if (tail) {
+        parsed.pathname = `/${tail}`;
+        return parsed.toString();
+      }
+    }
+
+    return parsed.toString();
+  } catch {
+    return trimmed;
+  }
+}
+
 function formatAngle(value: number) {
   return `${value.toFixed(6)} deg`;
 }
@@ -247,8 +274,9 @@ async function zoomToCurrentTileset() {
 }
 
 function triggerLoad() {
-  const v = urlInput.value.trim();
+  const v = normalizeTilesetUrl(urlInput.value);
   if (v) {
+    urlInput.value = v;
     loadTileset(v);
   }
 }
@@ -286,8 +314,8 @@ const initialTerrainMode: TerrainMode =
       ? TERRAIN_PDOK
       : DEFAULT_TERRAIN_MODE;
 
-urlInput.value = initialTileset;
+urlInput.value = normalizeTilesetUrl(initialTileset);
 tokenInput.value = initialToken;
 terrainSelect.value = initialTerrainMode;
 setupInspector();
-loadTileset(initialTileset);
+loadTileset(urlInput.value);

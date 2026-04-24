@@ -4,3 +4,5 @@ dist/
 bun.lockb
 *.log
 .DS_Store
+.idea
+.codex

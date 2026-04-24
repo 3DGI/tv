@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { access, stat } from "node:fs/promises";
 import { constants } from "node:fs";
-import { extname, normalize, resolve, sep } from "node:path";
+import { basename, dirname, extname, normalize, relative, resolve, sep } from "node:path";
 
 type CliOptions = {
   host: string;
@@ -29,7 +29,7 @@ const MIME_TYPES: Record<string, string> = {
   ".ktx2": "image/ktx2",
   ".pnts": "application/octet-stream",
   ".png": "image/png",
-  ".subtree": "application/json",
+  ".subtree": "application/octet-stream",
   ".svg": "image/svg+xml",
   ".terrain": "application/octet-stream",
   ".wasm": "application/wasm",
@@ -121,9 +121,16 @@ function buildServer(
   defaultPath: string,
 ) {
   return createServer(async (req, res) => {
-    res.setHeader("Access-Control-Allow-Origin", "*");
+    const requestOrigin = req.headers.origin;
+    res.setHeader("Access-Control-Allow-Origin", typeof requestOrigin === "string" ? requestOrigin : "*");
     res.setHeader("Access-Control-Allow-Headers", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+    res.setHeader("Access-Control-Allow-Private-Network", "true");
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    res.setHeader(
+      "Vary",
+      "Origin, Access-Control-Request-Headers, Access-Control-Request-Method, Access-Control-Request-Private-Network",
+    );
 
     if (req.method === "OPTIONS") {
       res.writeHead(204);
@@ -204,8 +211,8 @@ async function choosePort(host: string, startPort: number): Promise<number> {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const rootDir = process.cwd();
-  const tilesetPath = resolve(rootDir, options.tileset);
+  const cwd = process.cwd();
+  const tilesetPath = resolve(cwd, options.tileset);
 
   if (!(await pathExists(tilesetPath))) {
     throw new Error(`Tileset not found: ${tilesetPath}`);
@@ -214,8 +221,14 @@ async function main() {
     throw new Error(`Viewer bundle not found: ${VIEWER_DIST_DIR}`);
   }
 
+  const tilesetIsInCwd = tilesetPath === cwd || tilesetPath.startsWith(`${cwd}${sep}`);
+  const tilesetRootDir = tilesetIsInCwd ? cwd : dirname(tilesetPath);
+  const tilesetPathForUrl = (
+    tilesetIsInCwd ? relative(cwd, tilesetPath) : basename(tilesetPath)
+  ).split(sep).join("/");
+
   const tilesetPort = await choosePort(options.host, options.port);
-  const tilesetServer = buildServer(rootDir, options.host, tilesetPort, `/${options.tileset}`);
+  const tilesetServer = buildServer(tilesetRootDir, options.host, tilesetPort, `/${tilesetPathForUrl}`);
   await new Promise<void>((resolveStart, rejectStart) => {
     tilesetServer.once("error", rejectStart);
     tilesetServer.listen(tilesetPort, options.host, () => resolveStart());
@@ -227,11 +240,10 @@ async function main() {
     viewerServer.listen(viewerPort, options.host, () => resolveStart());
   });
 
-  const tilesetPathForUrl = options.tileset.split(sep).join("/");
   const loopbackTilesetUrl = new URL(tilesetPathForUrl, `http://127.0.0.1:${tilesetPort}/`).toString();
   const localViewerLoopbackUrl = buildViewerUrl(`http://127.0.0.1:${viewerPort}/`, loopbackTilesetUrl);
 
-  console.log(`Serving ${rootDir}`);
+  console.log(`Serving ${tilesetRootDir}`);
   console.log(`Loopback tileset URL: ${loopbackTilesetUrl}`);
   console.log(`Local viewer URL (loopback): ${localViewerLoopbackUrl}`);
 
