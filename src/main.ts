@@ -91,18 +91,6 @@ function formatHeight(value: number) {
   return `${value.toFixed(2)} m`;
 }
 
-function formatPropertyValue(value: unknown) {
-  if (value === undefined) return "undefined";
-  if (value === null) return "null";
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
-}
-
 function appendLine(container: HTMLElement, label: string, value: string) {
   const row = document.createElement("div");
   const labelEl = document.createElement("span");
@@ -227,24 +215,6 @@ function renderInspection(
   featureSection.appendChild(selectedBadge);
 
   appendLine(featureSection, "Feature ID", String(pickedFeature.featureId));
-
-  const propertyIds = pickedFeature.getPropertyIds().sort((a, b) => a.localeCompare(b));
-  if (propertyIds.length === 0) {
-    const noProps = document.createElement("div");
-    noProps.textContent = "Picked feature has no feature properties.";
-    featureSection.appendChild(noProps);
-    return;
-  }
-
-  const propertiesTitle = document.createElement("div");
-  propertiesTitle.textContent = "Properties";
-  featureSection.appendChild(propertiesTitle);
-
-  const propertiesPre = document.createElement("pre");
-  propertiesPre.textContent = propertyIds
-    .map((propertyId) => `${propertyId}: ${formatPropertyValue(pickedFeature.getProperty(propertyId))}`)
-    .join("\n");
-  featureSection.appendChild(propertiesPre);
 }
 
 function getPickedPosition(windowPosition: import("cesium").Cartesian2) {
