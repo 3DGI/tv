@@ -21,6 +21,7 @@ const urlInput = document.getElementById("url-input") as HTMLInputElement;
 const tokenInput = document.getElementById("token-input") as HTMLInputElement;
 const terrainSelect = document.getElementById("terrain-select") as HTMLSelectElement;
 const underpassColorToggle = document.getElementById("underpass-color-toggle") as HTMLInputElement;
+const underpassLegend = document.getElementById("underpass-legend") as HTMLDivElement;
 const loadBtn = document.getElementById("load-btn") as HTMLButtonElement;
 const zoomBtn = document.getElementById("zoom-btn") as HTMLButtonElement;
 const inspectContent = document.getElementById("inspect-content") as HTMLDivElement;
@@ -56,8 +57,8 @@ const SELECTION_HIGHLIGHT_COLOR = new Cesium.Color(0.25, 0.78, 1.0, 0.9);
 const UNDERPASS_SUCCESS_STYLE = new Cesium.Cesium3DTileStyle({
   color: {
     conditions: [
-      ["${add_underpass_success} === 1 || ${add_underpass_success} === '1'", "color('green')"],
-      ["${add_underpass_success} === 0 || ${add_underpass_success} === '0'", "color('red')"],
+      ["${add_underpass_success} === 1 || ${add_underpass_success} === '1'", "color('#8fd694')"],
+      ["${add_underpass_success} === 0 || ${add_underpass_success} === '0'", "color('#f08f8f')"],
       ["true", "color('white')"],
     ],
   },
@@ -283,7 +284,12 @@ function getTerrainMode(): TerrainMode {
   return TERRAIN_NONE;
 }
 
+function syncUnderpassLegend() {
+  underpassLegend.hidden = !underpassColorToggle.checked;
+}
+
 function syncUnderpassStyle() {
+  syncUnderpassLegend();
   if (!currentTileset) return;
 
   clearSelection();
