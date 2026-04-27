@@ -57,8 +57,15 @@ const SELECTION_HIGHLIGHT_COLOR = new Cesium.Color(0.25, 0.78, 1.0, 0.9);
 const UNDERPASS_SUCCESS_STYLE = new Cesium.Cesium3DTileStyle({
   color: {
     conditions: [
-      ["${add_underpass_success} === 1 || ${add_underpass_success} === '1'", "color('#8fd694')"],
+      [
+        "(${add_underpass_success} === 1 || ${add_underpass_success} === '1') && ${h_underpass_status} === 'success'",
+        "color('#8fd694')",
+      ],
       ["${add_underpass_success} === 0 || ${add_underpass_success} === '0'", "color('#f08f8f')"],
+      [
+        "${h_underpass_status} !== 'success' && ${h_underpass_status} !== '' && ${h_underpass_status} !== null",
+        "color('#b84a4a')",
+      ],
       ["true", "color('white')"],
     ],
   },

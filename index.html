@@ -114,6 +114,7 @@
     }
     .legend-swatch.success { background: #8fd694; }
     .legend-swatch.failed { background: #f08f8f; }
+    .legend-swatch.status-failed { background: #b84a4a; }
     @media (max-width: 900px) {
       #toolbar { right: 10px; top: 152px; }
       #url-input { flex-basis: 100%; }
@@ -153,8 +154,9 @@
 
   <div id="underpass-legend" hidden>
     <h2>Underpass colors</h2>
-    <div class="legend-row"><span class="legend-swatch success"></span><span>add_underpass_success = 1</span></div>
+    <div class="legend-row"><span class="legend-swatch status-failed"></span><span>h_underpass_status not empty and != success</span></div>
     <div class="legend-row"><span class="legend-swatch failed"></span><span>add_underpass_success = 0</span></div>
+    <div class="legend-row"><span class="legend-swatch success"></span><span>add_underpass_success = 1 and status = success</span></div>
   </div>
 
   <script>window.CESIUM_BASE_URL = "./cesium/";</script>
