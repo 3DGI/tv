@@ -81,3 +81,15 @@ bun run build:minimal-ui
 
 This is equivalent to `HIDE_TOP_UI=1 bun run build`.
 In this mode underpass colors are always enabled, and the initial camera view is set through the Cesium geocoder using `State Museum, Netherlands`.
+
+## Deploy
+
+To build and deploy the static viewer to `godzilla:/var/www/innovatiebudget-3dtiles`:
+
+```sh
+bun run deploy
+```
+
+You can override the target with `DEPLOY_HOST` and `DEPLOY_PATH`.
+
+The deploy script syncs the static app with `--delete`, but preserves the remote `3dt-export-ams/` data folder.
