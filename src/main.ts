@@ -27,7 +27,7 @@ const zoomBtn = document.getElementById("zoom-btn") as HTMLButtonElement;
 const inspectContent = document.getElementById("inspect-content") as HTMLDivElement;
 const searchParams = new URLSearchParams(window.location.search);
 const MINIMAL_TOP_UI = document.body.classList.contains("hide-top-ui");
-const MINIMAL_TOP_UI_GEOCODER_QUERY = "State Museum, Netherlands";
+const MINIMAL_TOP_UI_GEOCODER_QUERY = "Dam Square, Netherlands";
 
 const viewer = new Cesium.Viewer("cesiumContainer", {
   animation: false,
