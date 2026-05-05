@@ -12,7 +12,7 @@ for command in bun ssh rsync; do
   fi
 done
 
-bun run build
+bun run build:minimal-ui
 
 ssh "$remote_host" "mkdir -p '$remote_path'"
 rsync -az --delete --exclude "3dt-export-nl/" dist/ "$remote"
