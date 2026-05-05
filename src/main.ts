@@ -58,15 +58,18 @@ const UNDERPASS_SUCCESS_STYLE = new Cesium.Cesium3DTileStyle({
   color: {
     conditions: [
       [
-        "(${add_underpass_success} === 1 || ${add_underpass_success} === '1') && (${h_underpass_status} === 'success' || ${h_underpass_status} === null || ${h_underpass_status} === undefined)",
+        "(${add_underpass_success} === 1 || ${add_underpass_success} === '1') && ${h_underpass_source} === 'streetlidar'",
+        "color('#1f7a3a')",
+      ],
+      [
+        "(${add_underpass_success} === 1 || ${add_underpass_success} === '1') && ${h_underpass_source} !== 'streetlidar'",
         "color('#8fd694')",
       ],
-      ["${add_underpass_success} === 0 || ${add_underpass_success} === '0'", "color('#f08f8f')"],
       [
-        "${h_underpass_status} !== 'success' && ${h_underpass_status} !== '' && ${h_underpass_status} !== null && ${h_underpass_status} !== undefined",
-        "color('#b84a4a')",
+        "${add_underpass_success} === null || ${add_underpass_success} === undefined",
+        "color('#b9bec4')",
       ],
-      ["true", "color('white')"],
+      ["true", "color('#f08f8f')"],
     ],
   },
 });
@@ -223,17 +226,7 @@ function renderInspection(
 
   if (!pickedFeature) {
     featureSection.textContent = "No 3D Tiles feature picked.";
-    return;
   }
-
-  featureSection.className = "section selected";
-
-  const selectedBadge = document.createElement("div");
-  selectedBadge.className = "selection-badge";
-  selectedBadge.textContent = "Selected feature";
-  featureSection.appendChild(selectedBadge);
-
-  appendLine(featureSection, "Feature ID", String(pickedFeature.featureId));
 }
 
 function getPickedPosition(windowPosition: import("cesium").Cartesian2) {

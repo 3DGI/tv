@@ -70,3 +70,13 @@ The viewer includes a `Terrain` selector with three modes:
 - `PDOK Quantized Mesh` via `https://api.pdok.nl/kadaster/3d-basisvoorziening/ogc/v1/collections/digitaalterreinmodel/quantized-mesh`
 
 The selected terrain mode is persisted in the URL as the `terrain` query parameter.
+
+## Build options
+
+To build the viewer with only the `Zoom to tileset` button visible in the top toolbar:
+
+```sh
+bun run build:minimal-ui
+```
+
+This is equivalent to `HIDE_TOP_UI=1 bun run build`.

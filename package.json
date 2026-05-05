@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "bun run build.ts",
+    "build:minimal-ui": "HIDE_TOP_UI=1 bun run build.ts",
     "serve": "bun run serve.ts",
     "dev": "bun run build.ts && bun run serve.ts"
   },

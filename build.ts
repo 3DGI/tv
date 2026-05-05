@@ -2,6 +2,7 @@ import { cp, mkdir, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 
 const outDir = "dist";
+const hideTopUi = Bun.env.HIDE_TOP_UI === "1" || Bun.env.HIDE_TOP_UI === "true";
 
 if (existsSync(outDir)) {
   await rm(outDir, { recursive: true });
@@ -21,7 +22,11 @@ if (!result.success) {
   process.exit(1);
 }
 
-await Bun.write(`${outDir}/index.html`, Bun.file("index.html"));
+const html = await Bun.file("index.html").text();
+const outputHtml = hideTopUi
+  ? html.replace("<body>", '<body class="hide-top-ui">')
+  : html;
+await Bun.write(`${outDir}/index.html`, outputHtml);
 
 const cesiumSrc = "node_modules/cesium/Build/Cesium";
 const cesiumDst = `${outDir}/cesium`;

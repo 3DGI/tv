@@ -53,6 +53,12 @@
       background: #2c3e50; color: #eee; cursor: pointer; font-size: 14px;
     }
     button:hover { background: #34495e; }
+    body.hide-top-ui #toolbar {
+      right: auto;
+    }
+    body.hide-top-ui #toolbar > :not(#zoom-btn) {
+      display: none;
+    }
     #inspect-panel {
       position: absolute; left: 10px; bottom: 38px; z-index: 10;
       width: min(380px, calc(100vw - 20px)); max-height: 40vh; overflow: auto;
@@ -70,27 +76,8 @@
     #inspect-panel .section {
       margin-top: 10px;
     }
-    #inspect-panel .section.selected {
-      padding: 10px 11px 11px;
-      border: 1px solid rgba(106, 176, 222, 0.55);
-      border-radius: 6px;
-      background: linear-gradient(180deg, rgba(52, 110, 148, 0.18), rgba(0, 0, 0, 0));
-      box-shadow: inset 0 0 0 1px rgba(106, 176, 222, 0.08);
-    }
     #inspect-panel .label {
       display: inline-block; min-width: 92px; color: #cfd7df;
-    }
-    #inspect-panel .selection-badge {
-      display: inline-flex;
-      align-items: center;
-      margin-bottom: 8px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: rgba(106, 176, 222, 0.18);
-      color: #bfe6ff;
-      font-size: 11px;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
     }
     #underpass-legend {
       position: absolute; right: 10px; bottom: 38px; z-index: 10;
@@ -112,11 +99,13 @@
       border: 1px solid rgba(255, 255, 255, .45);
       flex: 0 0 auto;
     }
+    .legend-swatch.streetlidar-success { background: #1f7a3a; }
     .legend-swatch.success { background: #8fd694; }
+    .legend-swatch.other { background: #b9bec4; }
     .legend-swatch.failed { background: #f08f8f; }
-    .legend-swatch.status-failed { background: #b84a4a; }
     @media (max-width: 900px) {
       #toolbar { right: 10px; top: 152px; }
+      body.hide-top-ui #toolbar { top: 10px; right: auto; }
       #url-input { flex-basis: 100%; }
       #inspect-panel { right: 10px; width: auto; }
       #underpass-legend { left: 10px; right: 10px; bottom: 180px; width: auto; }
@@ -154,9 +143,10 @@
 
   <div id="underpass-legend" hidden>
     <h2>Underpass colors</h2>
-    <div class="legend-row"><span class="legend-swatch status-failed"></span><span>h_underpass_status not empty and != success</span></div>
-    <div class="legend-row"><span class="legend-swatch failed"></span><span>add_underpass_success = 0</span></div>
-    <div class="legend-row"><span class="legend-swatch success"></span><span>add_underpass_success = 1 and status success/missing</span></div>
+    <div class="legend-row"><span class="legend-swatch streetlidar-success"></span><span>bevat overhang (streetlidar)</span></div>
+    <div class="legend-row"><span class="legend-swatch success"></span><span>bevat overhang</span></div>
+    <div class="legend-row"><span class="legend-swatch other"></span><span>overig</span></div>
+    <div class="legend-row"><span class="legend-swatch failed"></span><span>fout in verwerking</span></div>
   </div>
 
   <script>window.CESIUM_BASE_URL = "./cesium/";</script>
