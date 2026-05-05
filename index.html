@@ -101,7 +101,7 @@
     }
     .legend-swatch.streetlidar-success { background: #1f7a3a; }
     .legend-swatch.success { background: #8fd694; }
-    .legend-swatch.other { background: #b9bec4; }
+    .legend-swatch.other { background: #ffffff; }
     .legend-swatch.failed { background: #f08f8f; }
     @media (max-width: 900px) {
       #toolbar { right: 10px; top: 152px; }
@@ -142,11 +142,11 @@
   </div>
 
   <div id="underpass-legend" hidden>
-    <h2>Underpass colors</h2>
+    <h2>Legenda</h2>
     <div class="legend-row"><span class="legend-swatch streetlidar-success"></span><span>bevat overhang (streetlidar)</span></div>
-    <div class="legend-row"><span class="legend-swatch success"></span><span>bevat overhang</span></div>
-    <div class="legend-row"><span class="legend-swatch other"></span><span>overig</span></div>
-    <div class="legend-row"><span class="legend-swatch failed"></span><span>fout in verwerking</span></div>
+    <div class="legend-row"><span class="legend-swatch success"></span><span>bevat overhang (aanname h=2.5m)</span></div>
+    <div class="legend-row"><span class="legend-swatch other"></span><span>geen overhang gedetecteerd</span></div>
+    <div class="legend-row"><span class="legend-swatch failed"></span><span>fout in overhang verwerking</span></div>
   </div>
 
   <script>window.CESIUM_BASE_URL = "./cesium/";</script>

@@ -67,7 +67,7 @@ const UNDERPASS_SUCCESS_STYLE = new Cesium.Cesium3DTileStyle({
       ],
       [
         "${add_underpass_success} === null || ${add_underpass_success} === undefined",
-        "color('#b9bec4')",
+        "color('white')",
       ],
       ["true", "color('#f08f8f')"],
     ],
