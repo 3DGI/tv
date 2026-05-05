@@ -80,3 +80,4 @@ bun run build:minimal-ui
 ```
 
 This is equivalent to `HIDE_TOP_UI=1 bun run build`.
+In this mode underpass colors are always enabled, and the initial camera view is set through the Cesium geocoder using `State Museum, Netherlands`.

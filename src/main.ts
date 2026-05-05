@@ -26,6 +26,8 @@ const loadBtn = document.getElementById("load-btn") as HTMLButtonElement;
 const zoomBtn = document.getElementById("zoom-btn") as HTMLButtonElement;
 const inspectContent = document.getElementById("inspect-content") as HTMLDivElement;
 const searchParams = new URLSearchParams(window.location.search);
+const MINIMAL_TOP_UI = document.body.classList.contains("hide-top-ui");
+const MINIMAL_TOP_UI_GEOCODER_QUERY = "State Museum, Netherlands";
 
 const viewer = new Cesium.Viewer("cesiumContainer", {
   animation: false,
@@ -285,7 +287,11 @@ function getTerrainMode(): TerrainMode {
 }
 
 function syncUnderpassLegend() {
-  underpassLegend.hidden = !underpassColorToggle.checked;
+  underpassLegend.hidden = !isUnderpassColorsEnabled();
+}
+
+function isUnderpassColorsEnabled() {
+  return MINIMAL_TOP_UI || underpassColorToggle.checked;
 }
 
 function syncUnderpassStyle() {
@@ -293,7 +299,7 @@ function syncUnderpassStyle() {
   if (!currentTileset) return;
 
   clearSelection();
-  currentTileset.style = underpassColorToggle.checked ? UNDERPASS_SUCCESS_STYLE : undefined;
+  currentTileset.style = isUnderpassColorsEnabled() ? UNDERPASS_SUCCESS_STYLE : undefined;
   currentTileset.makeStyleDirty();
   viewer.scene.requestRender();
 }
@@ -351,14 +357,22 @@ function updateQuery(url: string, token: string, terrainMode: TerrainMode, under
   window.history.replaceState({}, "", next);
 }
 
-async function loadTileset(url: string) {
+function geocodeInitialMinimalView() {
+  const viewModel = viewer.geocoder.viewModel;
+  viewModel.searchText = MINIMAL_TOP_UI_GEOCODER_QUERY;
+  viewModel.flightDuration = 0;
+  (viewModel.search as unknown as () => void)();
+}
+
+async function loadTileset(url: string, options: { zoomToTileset?: boolean } = {}) {
+  const zoomToTileset = options.zoomToTileset ?? true;
   applyToken();
   syncTerrain();
 
   try {
     const tileset = await Cesium.Cesium3DTileset.fromUrl(url, {
       showCreditsOnScreen: true,
-      debugShowBoundingVolume: true
+      debugShowBoundingVolume: !MINIMAL_TOP_UI
     });
 
     if (currentTileset) {
@@ -372,8 +386,10 @@ async function loadTileset(url: string) {
     attachTilesetSelectionLifecycle(tileset);
     currentTileset = tileset;
     syncUnderpassStyle();
-    updateQuery(url, tokenInput.value.trim(), getTerrainMode(), underpassColorToggle.checked);
-    await viewer.zoomTo(tileset);
+    updateQuery(url, tokenInput.value.trim(), getTerrainMode(), isUnderpassColorsEnabled());
+    if (zoomToTileset) {
+      await viewer.zoomTo(tileset);
+    }
   } catch (err: unknown) {
     console.error(err);
     const msg = err instanceof Error ? err.message : String(err);
@@ -416,17 +432,17 @@ urlInput.addEventListener("keydown", (e) => {
 tokenInput.addEventListener("change", () => {
   applyToken();
   syncTerrain();
-  updateQuery(urlInput.value.trim(), tokenInput.value.trim(), getTerrainMode(), underpassColorToggle.checked);
+  updateQuery(urlInput.value.trim(), tokenInput.value.trim(), getTerrainMode(), isUnderpassColorsEnabled());
 });
 
 terrainSelect.addEventListener("change", () => {
   syncTerrain();
-  updateQuery(urlInput.value.trim(), tokenInput.value.trim(), getTerrainMode(), underpassColorToggle.checked);
+  updateQuery(urlInput.value.trim(), tokenInput.value.trim(), getTerrainMode(), isUnderpassColorsEnabled());
 });
 
 underpassColorToggle.addEventListener("change", () => {
   syncUnderpassStyle();
-  updateQuery(urlInput.value.trim(), tokenInput.value.trim(), getTerrainMode(), underpassColorToggle.checked);
+  updateQuery(urlInput.value.trim(), tokenInput.value.trim(), getTerrainMode(), isUnderpassColorsEnabled());
 });
 
 const initialTileset = searchParams.get("tileset") ?? DEFAULT_TILESET_URL;
@@ -438,11 +454,16 @@ const initialTerrainMode: TerrainMode =
     : initialTerrainParam === TERRAIN_PDOK
       ? TERRAIN_PDOK
       : DEFAULT_TERRAIN_MODE;
-const initialUnderpassColorsEnabled = searchParams.get("underpassColors") === "1" || DEFAULT_UNDERPASS_COLORS_ENABLED;
+const initialUnderpassColorsEnabled =
+  MINIMAL_TOP_UI || searchParams.get("underpassColors") === "1" || DEFAULT_UNDERPASS_COLORS_ENABLED;
 
 urlInput.value = normalizeTilesetUrl(initialTileset);
 tokenInput.value = initialToken;
 terrainSelect.value = initialTerrainMode;
 underpassColorToggle.checked = initialUnderpassColorsEnabled;
 setupInspector();
-loadTileset(urlInput.value);
+loadTileset(urlInput.value, { zoomToTileset: !MINIMAL_TOP_UI }).then(() => {
+  if (MINIMAL_TOP_UI) {
+    geocodeInitialMinimalView();
+  }
+});
