@@ -15,6 +15,6 @@ done
 bun run build:minimal-ui
 
 ssh "$remote_host" "mkdir -p '$remote_path'"
-rsync -az --delete --exclude "3dt-export-nl/" dist/ "$remote"
+rsync -az --delete --exclude "*/3dt-export-nl*/" dist/ "$remote"
 
 echo "Deployed dist/ to $remote"

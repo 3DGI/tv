@@ -27,7 +27,11 @@ const zoomBtn = document.getElementById("zoom-btn") as HTMLButtonElement;
 const inspectContent = document.getElementById("inspect-content") as HTMLDivElement;
 const searchParams = new URLSearchParams(window.location.search);
 const MINIMAL_TOP_UI = document.body.classList.contains("hide-top-ui");
-const MINIMAL_TOP_UI_GEOCODER_QUERY = "Dam Square, Netherlands";
+const AMSTERDAM_CENTER = {
+  longitude: 4.91406,
+  latitude: 52.377995,
+  height: 1200,
+};
 
 const viewer = new Cesium.Viewer("cesiumContainer", {
   animation: false,
@@ -357,11 +361,14 @@ function updateQuery(url: string, token: string, terrainMode: TerrainMode, under
   window.history.replaceState({}, "", next);
 }
 
-function geocodeInitialMinimalView() {
-  const viewModel = viewer.geocoder.viewModel;
-  viewModel.searchText = MINIMAL_TOP_UI_GEOCODER_QUERY;
-  viewModel.flightDuration = 0;
-  (viewModel.search as unknown as () => void)();
+function setInitialMinimalView() {
+  viewer.camera.setView({
+    destination: Cesium.Cartesian3.fromDegrees(
+      AMSTERDAM_CENTER.longitude,
+      AMSTERDAM_CENTER.latitude,
+      AMSTERDAM_CENTER.height,
+    ),
+  });
 }
 
 async function loadTileset(url: string, options: { zoomToTileset?: boolean } = {}) {
@@ -464,6 +471,6 @@ underpassColorToggle.checked = initialUnderpassColorsEnabled;
 setupInspector();
 loadTileset(urlInput.value, { zoomToTileset: !MINIMAL_TOP_UI }).then(() => {
   if (MINIMAL_TOP_UI) {
-    geocodeInitialMinimalView();
+    setInitialMinimalView();
   }
 });
