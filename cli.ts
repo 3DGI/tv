@@ -114,6 +114,15 @@ function resolveRequestPath(rootDir: string, pathname: string): string {
   return resolve(rootDir, normalized);
 }
 
+function requestPathname(requestTarget: string | undefined): string {
+  // `new URL("//tile.b3dm", base)` interprets the target as a scheme-relative
+  // URL. HTTP origin-form request targets may legitimately start with `//`,
+  // though, and must remain paths rather than being treated as the server root.
+  const target = requestTarget ?? "/";
+  const queryStart = target.indexOf("?");
+  return (queryStart === -1 ? target : target.slice(0, queryStart)) || "/";
+}
+
 function buildServer(
   rootDir: string,
   host: string,
@@ -144,8 +153,8 @@ function buildServer(
       return;
     }
 
-    const reqUrl = new URL(req.url ?? "/", `http://${req.headers.host ?? `${host}:${port}`}`);
-    const targetPath = resolveRequestPath(rootDir, reqUrl.pathname === "/" ? defaultPath : reqUrl.pathname);
+    const pathname = requestPathname(req.url);
+    const targetPath = resolveRequestPath(rootDir, pathname === "/" ? defaultPath : pathname);
 
     if (targetPath !== rootDir && !targetPath.startsWith(`${rootDir}${sep}`)) {
       res.writeHead(403);
