@@ -46,7 +46,9 @@ const viewer = new Cesium.Viewer("cesiumContainer", {
   maximumRenderTimeChange: Infinity,
 });
 
-const DEFAULT_TILESET_URL = "http://localhost:8080/tileset.json";
+const DEFAULT_TILESET_URL =
+  document.querySelector<HTMLMetaElement>('meta[name="tv-tileset"]')?.content ??
+  "http://localhost:8080/tileset.json";
 const DEFAULT_TOKEN = "";
 const DEFAULT_UNDERPASS_COLORS_ENABLED = false;
 const PDOK_TERRAIN_URL = "https://roofer-online.nl/pdok-qm-ahn6/";

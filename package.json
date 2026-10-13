@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "bun run build && bun test",
     "build": "bun run build.ts",
     "build:minimal-ui": "HIDE_TOP_UI=1 bun run build.ts",
     "serve": "bun run serve.ts",

@@ -23,6 +23,32 @@ Optional flags:
 nix run github:3dgi/tv -- --port 8090 --tileset path/to/tileset.json
 ```
 
+## Static deployment
+
+From a directory containing `tileset.json`, build a preconfigured viewer:
+
+```sh
+nix run github:3dgi/tv -- build
+```
+
+For a tileset elsewhere or with a different filename:
+
+```sh
+nix run github:3dgi/tv -- build --tileset /path/to/tileset-dir/tileset.json
+```
+
+The command writes `index.html` and `tv-assets/` alongside the selected tileset
+and exits without starting a server. Upload the entire tileset directory to a
+static web server that serves `index.html` for directory URLs, then open that
+directory's URL (for example, `https://example.com/datasets/my-tileset/`).
+The viewer loads the selected tileset automatically using a relative URL, so no
+hostname or query parameter needs to be configured. A `tileset` query parameter
+can still override the configured tileset.
+
+Run the command again to update the generated viewer. Existing pages or
+`tv-assets/` directories from another application are protected from overwriting.
+The server needs no Bun or Nix installation.
+
 ## Local development
 
 Run from the local repository:
